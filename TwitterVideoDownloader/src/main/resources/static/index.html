@@ -5,214 +5,182 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Video Downloader</title>
   <style>
-      body {
-          display: flex;
-          height: 100vh;
-          justify-content: center;
-          align-items: center;
-          background: linear-gradient(135deg, #1DA1F2, #002244);
-          color: #fff;
-          font-family: 'Arial', sans-serif;
-          text-align: center;
-          margin: 0;
-          padding: 20px;
-      }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(to right, #4facfe, #00f2fe);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
 
-      .container {
-          background-color: rgba(0, 0, 0, 0.85);
-          padding: 35px;
-          border-radius: 15px;
-          box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3);
-          width: 90%;
-          max-width: 450px;
-      }
+    .container {
+      background-color: white;
+      padding: 40px;
+      border-radius: 20px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      width: 90%;
+      max-width: 500px;
+      text-align: center;
+    }
 
-      h1 {
-          margin-bottom: 15px;
-          font-size: 22px;
-      }
+    h1 {
+      margin-bottom: 20px;
+      color: #333;
+      font-size: 24px;
+    }
 
-      input[type="text"] {
-          width: 100%;
-          padding: 12px;
-          border: none;
-          border-radius: 8px;
-          margin-bottom: 15px;
-          font-size: 14px;
-          outline: none;
-      }
+    input[type="text"] {
+      width: 100%;
+      padding: 15px;
+      font-size: 16px;
+      margin-bottom: 20px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+    }
 
-      button {
-          width: 100%;
-          padding: 12px;
-          background: linear-gradient(135deg, #FFD700, #FFC107);
-          border: none;
-          border-radius: 8px;
-          font-size: 16px;
-          color: #333;
-          font-weight: bold;
-          cursor: pointer;
-          transition: background 0.3s ease;
-      }
+    button {
+      padding: 15px;
+      width: 100%;
+      background: linear-gradient(to right, #ff416c, #ff4b2b);
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: 0.3s ease;
+    }
 
-      button:hover {
-          background: linear-gradient(135deg, #FFC107, #FF9800);
-      }
+    button:hover {
+      background: linear-gradient(to right, #ff4b2b, #ff416c);
+    }
 
-      #progress-container {
-          width: 100%;
-          background-color: #ddd;
-          border-radius: 8px;
-          margin-top: 15px;
-          display: none;
-      }
+    #thumbnail {
+      display: none;
+      width: 100%;
+      margin-top: 20px;
+      border-radius: 12px;
+      box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+    }
 
-      #progress-bar {
-          width: 0%;
-          height: 10px;
-          background-color: #FFD700;
-          border-radius: 8px;
-          transition: width 0.3s ease;
-      }
+    #progress-container {
+      width: 100%;
+      background-color: #e0e0e0;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 20px;
+      display: none;
+    }
 
-      #result {
-          margin-top: 15px;
-          font-weight: bold;
-      }
+    #progress-bar {
+      width: 0%;
+      height: 10px;
+      background-color: #4caf50;
+      transition: width 0.4s ease;
+    }
 
-      #downloadLink {
-          display: none;
-          margin-top: 15px;
-          padding: 12px;
-          background-color: #28a745;
-          color: white;
-          border-radius: 8px;
-          text-decoration: none;
-          font-weight: bold;
-          transition: background 0.3s ease;
-      }
+    #result {
+      margin-top: 20px;
+      font-weight: bold;
+    }
 
-      #downloadLink:hover {
-          background-color: #218838;
-      }
+    #downloadLink {
+      display: none;
+      margin-top: 20px;
+      padding: 15px;
+      background-color: #28a745;
+      color: white;
+      border-radius: 10px;
+      text-decoration: none;
+      font-weight: bold;
+      transition: background 0.3s ease;
+    }
 
-      /* Updated Thumbnail Styling */
-      #thumbnail {
-          display: none;
-          margin-top: 12px;
-          width: 100%;
-          max-height: 250px;
-          object-fit: cover;
-          border-radius: 10px;
-          box-shadow: 0 4px 8px rgba(255, 255, 255, 0.2);
-          transition: opacity 0.3s ease-in-out;
-      }
-
-      /* Responsive Design */
-      @media (max-width: 500px) {
-          .container {
-              padding: 25px;
-          }
-
-          h1 {
-              font-size: 20px;
-          }
-
-          input, button {
-              font-size: 14px;
-          }
-
-          #thumbnail {
-              max-height: 200px;
-          }
-      }
+    #downloadLink:hover {
+      background-color: #218838;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-      <h1>🔗 Video Downloader</h1>
-      <form id="downloadForm">
-          <input type="text" id="videoUrl" placeholder="Paste Video URL here..." required>
-          <button type="submit">Enter 🚀</button>
-      </form>
-      
-      <img id="thumbnail" src="" alt="Thumbnail Preview">
-      
-      <p id="result"></p>
-      <div id="progress-container">
-          <div id="progress-bar"></div>
-      </div>
-      <a id="downloadLink" href="#" download>📥 Download Video</a>
+    <h1>Video Downloader 🚀</h1>
+    <form id="downloadForm">
+      <input type="text" id="videoUrl" placeholder="Paste video URL here..." required>
+      <button type="submit">Download</button>
+    </form>
+    <img id="thumbnail" src="" alt="Thumbnail Preview">
+    <p id="result"></p>
+    <div id="progress-container">
+      <div id="progress-bar"></div>
+    </div>
+    <a id="downloadLink" href="#" download>📥 Download Video</a>
   </div>
 
   <script>
-      document.getElementById("videoUrl").addEventListener("input", async function() {
-          const videoUrl = this.value.trim();
-          const thumbnail = document.getElementById("thumbnail");
+    document.getElementById("videoUrl").addEventListener("input", async function () {
+      const videoUrl = this.value.trim();
+      const thumbnail = document.getElementById("thumbnail");
 
-          if (!videoUrl) {
-              thumbnail.style.display = "none";
-              return;
-          }
+      if (!videoUrl) {
+        thumbnail.style.display = "none";
+        return;
+      }
 
-          try {
-              const response = await fetch(`/api/thumbnail?videoUrl=${encodeURIComponent(videoUrl)}`);
-              const data = await response.json();
-              console.log("Thumbnail response data:", data);
+      try {
+        const response = await fetch(`/api/thumbnail?videoUrl=${encodeURIComponent(videoUrl)}`);
+        const data = await response.json();
 
-              if (data.thumbnail) {
-                  thumbnail.src = data.thumbnail;
-                  thumbnail.style.display = "block";
-                  thumbnail.style.opacity = "1";
-              } else {
-                  console.log("No thumbnail found");
-                  thumbnail.style.display = "none";
-              }
-          } catch (error) {
-              console.error("Thumbnail fetch error:", error);
-              thumbnail.style.display = "none";
-          }
-      });
+        if (data.thumbnail) {
+          thumbnail.src = data.thumbnail;
+          thumbnail.style.display = "block";
+        } else {
+          thumbnail.style.display = "none";
+        }
+      } catch (error) {
+        console.error("Thumbnail error:", error);
+        thumbnail.style.display = "none";
+      }
+    });
 
-      document.getElementById("downloadForm").addEventListener("submit", async function(event) {
-          event.preventDefault();
+    document.getElementById("downloadForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      const videoUrl = document.getElementById("videoUrl").value.trim();
+      const progressBar = document.getElementById("progress-bar");
+      const progressContainer = document.getElementById("progress-container");
+      const result = document.getElementById("result");
+      const downloadLink = document.getElementById("downloadLink");
 
-          const videoUrl = document.getElementById("videoUrl").value.trim();
-          const progressBar = document.getElementById("progress-bar");
-          const progressContainer = document.getElementById("progress-container");
-          const resultText = document.getElementById("result");
-          const downloadLink = document.getElementById("downloadLink");
+      result.innerText = "";
+      progressContainer.style.display = "block";
+      progressBar.style.width = "0%";
+      downloadLink.style.display = "none";
 
-          resultText.innerText = "";
-          progressContainer.style.display = "block";
-          progressBar.style.width = "0%";
-          downloadLink.style.display = "none";
+      try {
+        const response = await fetch('/api/download', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({ videoUrl })
+        });
 
-          try {
-              const response = await fetch('/api/download', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                  body: new URLSearchParams({ videoUrl })
-              });
+        if (!response.ok) throw new Error(await response.text());
 
-              if (!response.ok) {
-                  throw new Error(await response.text());
-              }
+        const blob = await response.blob();
+        const fileUrl = window.URL.createObjectURL(blob);
 
-              const blob = await response.blob();
-              const fileUrl = window.URL.createObjectURL(blob);
-
-              resultText.innerText = "✅ Video ready for download!";
-              resultText.style.color = "green";
-              downloadLink.href = fileUrl;
-              downloadLink.download = "video.mp4";
-              downloadLink.style.display = "block";
-          } catch (error) {
-              console.error("Download error:", error);
-              resultText.innerText = "❌ Error downloading video. Try again!";
-              resultText.style.color = "red";
-          }
-      });
+        result.innerText = "✅ Video ready for download!";
+        result.style.color = "green";
+        downloadLink.href = fileUrl;
+        downloadLink.download = "video.mp4";
+        downloadLink.style.display = "inline-block";
+      } catch (error) {
+        console.error("Download error:", error);
+        result.innerText = "❌ Error downloading video. Try again!";
+        result.style.color = "red";
+      }
+    });
   </script>
 </body>
 </html>
