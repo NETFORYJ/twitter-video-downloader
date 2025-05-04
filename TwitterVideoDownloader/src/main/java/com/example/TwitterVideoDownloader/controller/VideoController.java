@@ -43,7 +43,48 @@ public class VideoController {
       }
    }
 
+   
+   
    @PostMapping({"/download"})
+   public ResponseEntity<Resource> downloadVideo(@RequestParam String videoUrl) {
+       // ✅ Allow only Twitter/X video URLs
+       if (!videoUrl.matches("^(https?://)?(www\\.)?(twitter\\.com|x\\.com)/[a-zA-Z0-9_]+/status/\\d+")) {
+           logger.warning("Blocked non-Twitter URL: " + videoUrl);
+           return ResponseEntity
+                   .status(HttpStatus.BAD_REQUEST)
+                   .body(null); // You can customize the message if needed
+       }
+
+       try {
+           logger.info("Downloading video from: " + videoUrl);
+           String filePath = this.videoDownloadService.downloadVideo(videoUrl);
+           logger.info("Downloaded file path: " + filePath);
+
+           Path path = Paths.get("downloads", filePath);
+           File file = path.toFile();
+
+           if (file.exists() && file.canRead()) {
+               Resource fileResource = new UrlResource(path.toUri());
+               if (fileResource.exists() && fileResource.isReadable()) {
+                   return ResponseEntity.ok()
+                           .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                           .header("Content-Disposition", "attachment; filename=\"" + file.getName() + "\"")
+                           .body(fileResource);
+               } else {
+                   throw new RuntimeException("Failed to read video file");
+               }
+           } else {
+               logger.severe("File does not exist or cannot be read: " + filePath);
+               return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+           }
+       } catch (Exception e) {
+           logger.log(Level.SEVERE, "Error downloading video: " + e.getMessage(), e);
+           return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+       }
+   }
+
+   // all video downloading from soial media 
+   /*@PostMapping({"/download"})
    public ResponseEntity<Resource> downloadVideo(@RequestParam String videoUrl) {
       try {
          logger.info("Downloading video from: " + videoUrl);
@@ -70,7 +111,7 @@ public class VideoController {
          return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null); // fixed
       }
    }
-
+*/
 
    @GetMapping({"/thumbnail"})
    public ResponseEntity<Map<String, String>> getVideoThumbnail(@RequestParam String videoUrl) {

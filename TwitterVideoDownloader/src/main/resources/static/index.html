@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Video Downloader</title>
   <style>
     body {
@@ -32,16 +32,34 @@
       font-size: 24px;
     }
 
-    input[type="text"] {
-      width: 100%;
-      padding: 15px;
-      font-size: 16px;
-      margin-bottom: 20px;
-      border: 1px solid #ccc;
-      border-radius: 10px;
-    }
+    .input-wrapper {
+  position: relative;
+  width: 100%;
+}
 
-    button {
+.input-wrapper input {
+  width: 100%;
+  padding: 15px 40px 15px 15px; /* space for button */
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  box-sizing: border-box;
+}
+
+.input-wrapper button {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+
+
+    button[type="submit"] {
       padding: 15px;
       width: 100%;
       background: linear-gradient(to right, #ff416c, #ff4b2b);
@@ -54,7 +72,7 @@
       transition: 0.3s ease;
     }
 
-    button:hover {
+    button[type="submit"]:hover {
       background: linear-gradient(to right, #ff4b2b, #ff416c);
     }
 
@@ -105,10 +123,15 @@
   </style>
 </head>
 <body>
+
   <div class="container">
-    <h1>Video Downloader 🚀</h1>
+    <h1>Twiter Video Downloader 🚀</h1>
     <form id="downloadForm">
-      <input type="text" id="videoUrl" placeholder="Paste video URL here..." required>
+    <div class="input-wrapper">
+  <input type="text" id="videoUrl" placeholder="Paste video URL here..." required>
+  <button type="button" id="actionBtn">📋</button>
+</div>
+
       <button type="submit">Download</button>
     </form>
     <img id="thumbnail" src="" alt="Thumbnail Preview">
@@ -120,34 +143,82 @@
   </div>
 
   <script>
-    document.getElementById("videoUrl").addEventListener("input", async function () {
-      const videoUrl = this.value.trim();
+    const input = document.getElementById("videoUrl");
+    const actionBtn = document.getElementById("actionBtn");
+    const form = document.getElementById("downloadForm");
+
+    // Basic URL pattern (client-side validation)
+   
+    /* function isValidUrlOld(url) {
+  const pattern = /^(https?:\/\/)?(www\.)?[\w\-]+\.[\w]{2,}.*$/i;
+  return pattern.test(url);
+}
+*/
+function isValidUrl(url) {
+	  const pattern = /^https?:\/\/(www\.)?(twitter\.com|x\.com)\/[a-zA-Z0-9_]+\/status\/\d+/i;
+	  return pattern.test(url);
+	}
+
+
+    input.addEventListener("input", () => {
+      const videoUrl = input.value.trim();
       const thumbnail = document.getElementById("thumbnail");
+      const result = document.getElementById("result");
 
       if (!videoUrl) {
+        thumbnail.style.display = "none";
+        actionBtn.textContent = "📋";
+        result.innerText = "";
+        return;
+      }
+
+      actionBtn.textContent = "❌";
+
+      if (!isValidUrl(videoUrl)) {
+        result.innerText = "❌ Invalid URL format!";
+        result.style.color = "red";
         thumbnail.style.display = "none";
         return;
       }
 
-      try {
-        const response = await fetch(`/api/thumbnail?videoUrl=${encodeURIComponent(videoUrl)}`);
-        const data = await response.json();
+      result.innerText = "";
 
-        if (data.thumbnail) {
-          thumbnail.src = data.thumbnail;
-          thumbnail.style.display = "block";
-        } else {
+      fetch(`/api/thumbnail?videoUrl=${encodeURIComponent(videoUrl)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.thumbnail) {
+            thumbnail.src = data.thumbnail;
+            thumbnail.style.display = "block";
+          } else {
+            thumbnail.style.display = "none";
+          }
+        })
+        .catch((error) => {
+          console.error("Thumbnail error:", error);
           thumbnail.style.display = "none";
+        });
+    });
+
+    actionBtn.addEventListener("click", async () => {
+      if (input.value.trim()) {
+        input.value = "";
+        actionBtn.textContent = "📋";
+        input.dispatchEvent(new Event("input"));
+      } else {
+        try {
+          const text = await navigator.clipboard.readText();
+          input.value = text;
+          actionBtn.textContent = "❌";
+          input.dispatchEvent(new Event("input"));
+        } catch (err) {
+          console.error("Clipboard access failed", err);
         }
-      } catch (error) {
-        console.error("Thumbnail error:", error);
-        thumbnail.style.display = "none";
       }
     });
 
-    document.getElementById("downloadForm").addEventListener("submit", async function (e) {
+    form.addEventListener("submit", async function (e) {
       e.preventDefault();
-      const videoUrl = document.getElementById("videoUrl").value.trim();
+      const videoUrl = input.value.trim();
       const progressBar = document.getElementById("progress-bar");
       const progressContainer = document.getElementById("progress-container");
       const result = document.getElementById("result");
@@ -158,6 +229,12 @@
       progressBar.style.width = "0%";
       downloadLink.style.display = "none";
 
+      if (!isValidUrl(videoUrl)) {
+        result.innerText = "❌ Invalid URL. Please enter a correct one.";
+        result.style.color = "red";
+        return;
+      }
+
       try {
         const response = await fetch('/api/download', {
           method: 'POST',
@@ -165,7 +242,17 @@
           body: new URLSearchParams({ videoUrl })
         });
 
-        if (!response.ok) throw new Error(await response.text());
+        // if (!response.ok) throw new Error(await response.text());
+
+        if (!response.ok) {
+        	  if (response.status === 400) {
+        	    result.innerText = "❌ Please enter a valid Twitter or X video URL.";
+        	  } else {
+        	    result.innerText = "❌ Error downloading video. Try again!";
+        	  }
+        	  result.style.color = "red";
+        	  return;
+        	}
 
         const blob = await response.blob();
         const fileUrl = window.URL.createObjectURL(blob);
@@ -182,5 +269,6 @@
       }
     });
   </script>
+
 </body>
 </html>

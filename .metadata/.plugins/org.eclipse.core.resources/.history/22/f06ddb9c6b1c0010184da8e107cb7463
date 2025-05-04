@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SSSTwitter Video Downloader</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f5f8fa;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .container {
+      background: #ffffff;
+      padding: 30px 20px;
+      border-radius: 15px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      width: 90%;
+      max-width: 450px;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 22px;
+      margin-bottom: 20px;
+      color: #1da1f2;
+    }
+
+    .input-wrapper {
+      position: relative;
+      margin-bottom: 20px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 14px 16px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+
+    button, a.button {
+      display: inline-block;
+      margin-top: 15px;
+      padding: 12px 20px;
+      background: #1da1f2;
+      color: #ffffff;
+      font-weight: bold;
+      font-size: 15px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.3s;
+    }
+
+    button:hover, a.button:hover {
+      background: #0d8ddb;
+    }
+
+    img#thumbnail {
+      width: 100%;
+      border-radius: 12px;
+      margin-top: 20px;
+      display: none;
+    }
+
+    #result {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>Twitter Video Downloader 📥</h1>
+    <div class="input-wrapper">
+      <input type="text" id="videoUrl" placeholder="Paste Twitter video URL..." required>
+    </div>
+    <button onclick="fetchVideo()">Download</button>
+
+    <img id="thumbnail" src="" alt="Thumbnail">
+    <div id="result"></div>
+  </div>
+
+  <script>
+    async function fetchVideo() {
+      const videoUrl = document.getElementById("videoUrl").value.trim();
+      const thumbnail = document.getElementById("thumbnail");
+      const result = document.getElementById("result");
+
+      if (!videoUrl) {
+        alert("Please enter a video URL");
+        return;
+      }
+
+      result.innerText = "Fetching video info...";
+
+      try {
+        // ✨ Replace with actual API that works (Example below)
+        const apiEndpoint = `https://ssstwitter.com/api?url=${encodeURIComponent(videoUrl)}`;
+
+        const response = await fetch(apiEndpoint);
+        const data = await response.json();
+
+        if (data.downloadUrl) {
+          thumbnail.src = data.thumbnailUrl || "";
+          if (data.thumbnailUrl) {
+            thumbnail.style.display = "block";
+          } else {
+            thumbnail.style.display = "none";
+          }
+
+          result.innerHTML = `<a href="${data.downloadUrl}" class="button" download>Download Video 🎬</a>`;
+        } else {
+          result.innerText = "❌ Could not fetch video. Try again.";
+          thumbnail.style.display = "none";
+        }
+      } catch (error) {
+        console.error("Error:", error);
+        result.innerText = "❌ Failed to fetch video info.";
+        thumbnail.style.display = "none";
+      }
+    }
+  </script>
+</body>
+</html>

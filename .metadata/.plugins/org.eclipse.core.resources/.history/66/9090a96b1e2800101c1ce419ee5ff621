@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Video Downloader</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(to right, #4facfe, #00f2fe);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .container {
+      background-color: white;
+      padding: 40px;
+      border-radius: 20px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      width: 90%;
+      max-width: 500px;
+      text-align: center;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      color: #333;
+      font-size: 24px;
+    }
+
+    .input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.input-wrapper input {
+  width: 100%;
+  padding: 15px 40px 15px 15px; /* space for button */
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  box-sizing: border-box;
+}
+
+.input-wrapper button {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+
+
+    button[type="submit"] {
+      padding: 15px;
+      width: 100%;
+      background: linear-gradient(to right, #ff416c, #ff4b2b);
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: 0.3s ease;
+    }
+
+    button[type="submit"]:hover {
+      background: linear-gradient(to right, #ff4b2b, #ff416c);
+    }
+
+    #thumbnail {
+      display: none;
+      width: 100%;
+      margin-top: 20px;
+      border-radius: 12px;
+      box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+    }
+
+    #progress-container {
+      width: 100%;
+      background-color: #e0e0e0;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 20px;
+      display: none;
+    }
+
+    #progress-bar {
+      width: 0%;
+      height: 10px;
+      background-color: #4caf50;
+      transition: width 0.4s ease;
+    }
+
+    #result {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+
+    #downloadLink {
+      display: none;
+      margin-top: 20px;
+      padding: 15px;
+      background-color: #28a745;
+      color: white;
+      border-radius: 10px;
+      text-decoration: none;
+      font-weight: bold;
+      transition: background 0.3s ease;
+    }
+
+    #downloadLink:hover {
+      background-color: #218838;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>Twiter Video Downloader 🚀</h1>
+    <form id="downloadForm">
+    <div class="input-wrapper">
+  <input type="text" id="videoUrl" placeholder="Paste video URL here..." required>
+  <button type="button" id="actionBtn">📋</button>
+</div>
+
+      <button type="submit">Download</button>
+    </form>
+    <img id="thumbnail" src="" alt="Thumbnail Preview">
+    <p id="result"></p>
+    <div id="progress-container">
+      <div id="progress-bar"></div>
+    </div>
+    <a id="downloadLink" href="#" download>📥 Download Video</a>
+  </div>
+
+  <script>
+    const input = document.getElementById("videoUrl");
+    const actionBtn = document.getElementById("actionBtn");
+    const form = document.getElementById("downloadForm");
+
+    // Basic URL pattern (client-side validation)
+    function isValidUrlOld(url) {
+  const pattern = /^(https?:\/\/)?(www\.)?[\w\-]+\.[\w]{2,}.*$/i;
+  return pattern.test(url);
+}
+
+function isValidUrl(url) {
+  const pattern = /^https?:\/\/(www\.)?(twitter\.com|x\.com)\/[a-zA-Z0-9_]+\/status\/\d+/i;
+  return pattern.test(url);
+}
+
+
+    input.addEventListener("input", () => {
+      const videoUrl = input.value.trim();
+      const thumbnail = document.getElementById("thumbnail");
+      const result = document.getElementById("result");
+
+      if (!videoUrl) {
+        thumbnail.style.display = "none";
+        actionBtn.textContent = "📋";
+        result.innerText = "";
+        return;
+      }
+
+      actionBtn.textContent = "❌";
+
+      if (!isValidUrl(videoUrl)) {
+        result.innerText = "❌ Invalid URL format!";
+        result.style.color = "red";
+        thumbnail.style.display = "none";
+        return;
+      }
+
+      result.innerText = "";
+
+      fetch(`/api/thumbnail?videoUrl=${encodeURIComponent(videoUrl)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.thumbnail) {
+            thumbnail.src = data.thumbnail;
+            thumbnail.style.display = "block";
+          } else {
+            thumbnail.style.display = "none";
+          }
+        })
+        .catch((error) => {
+          console.error("Thumbnail error:", error);
+          thumbnail.style.display = "none";
+        });
+    });
+
+    actionBtn.addEventListener("click", async () => {
+      if (input.value.trim()) {
+        input.value = "";
+        actionBtn.textContent = "📋";
+        input.dispatchEvent(new Event("input"));
+      } else {
+        try {
+          const text = await navigator.clipboard.readText();
+          input.value = text;
+          actionBtn.textContent = "❌";
+          input.dispatchEvent(new Event("input"));
+        } catch (err) {
+          console.error("Clipboard access failed", err);
+        }
+      }
+    });
+
+    form.addEventListener("submit", async function (e) {
+      e.preventDefault();
+      const videoUrl = input.value.trim();
+      const progressBar = document.getElementById("progress-bar");
+      const progressContainer = document.getElementById("progress-container");
+      const result = document.getElementById("result");
+      const downloadLink = document.getElementById("downloadLink");
+
+      result.innerText = "";
+      progressContainer.style.display = "block";
+      progressBar.style.width = "0%";
+      downloadLink.style.display = "none";
+
+      if (!isValidUrl(videoUrl)) {
+        result.innerText = "❌ Invalid URL. Please enter a correct one.";
+        result.style.color = "red";
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/download', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({ videoUrl })
+        });
+
+        if (!response.ok) throw new Error(await response.text());
+
+        const blob = await response.blob();
+        const fileUrl = window.URL.createObjectURL(blob);
+
+        result.innerText = "✅ Video ready for download!";
+        result.style.color = "green";
+        downloadLink.href = fileUrl;
+        downloadLink.download = "video.mp4";
+        downloadLink.style.display = "inline-block";
+      } catch (error) {
+        console.error("Download error:", error);
+        result.innerText = "❌ Error downloading video. Try again!";
+        result.style.color = "red";
+      }
+    });
+  </script>
+
+</body>
+</html>

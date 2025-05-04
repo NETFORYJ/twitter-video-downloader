@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Downloader</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(to right, #4facfe, #00f2fe);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .container {
+      background-color: white;
+      padding: 40px;
+      border-radius: 20px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      width: 90%;
+      max-width: 500px;
+      text-align: center;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      color: #333;
+      font-size: 24px;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-wrapper input[type="text"] {
+      width: 100%;
+      padding: 15px;
+      font-size: 16px;
+      margin-bottom: 20px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      padding-right: 110px;
+    }
+
+    .input-buttons {
+      position: absolute;
+      right: 10px;
+      display: flex;
+      gap: 5px;
+    }
+
+    .input-buttons button {
+      background: #f0f0f0;
+      border: 1px solid #ccc;
+      font-size: 12px;
+      padding: 5px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button[type="submit"] {
+      padding: 15px;
+      width: 100%;
+      background: linear-gradient(to right, #ff416c, #ff4b2b);
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: 0.3s ease;
+    }
+
+    button[type="submit"]:hover {
+      background: linear-gradient(to right, #ff4b2b, #ff416c);
+    }
+
+    #thumbnail {
+      display: none;
+      width: 100%;
+      margin-top: 20px;
+      border-radius: 12px;
+      box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+    }
+
+    #progress-container {
+      width: 100%;
+      background-color: #e0e0e0;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 20px;
+      display: none;
+    }
+
+    #progress-bar {
+      width: 0%;
+      height: 10px;
+      background-color: #4caf50;
+      transition: width 0.4s ease;
+    }
+
+    #result {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+
+    #downloadLink {
+      display: none;
+      margin-top: 20px;
+      padding: 15px;
+      background-color: #28a745;
+      color: white;
+      border-radius: 10px;
+      text-decoration: none;
+      font-weight: bold;
+      transition: background 0.3s ease;
+    }
+
+    #downloadLink:hover {
+      background-color: #218838;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Video Downloader 🚀</h1>
+    <form id="downloadForm">
+      <div class="input-wrapper">
+        <input type="text" id="videoUrl" placeholder="Paste video URL here..." required>
+        <div class="input-buttons">
+          <button type="button" id="pasteBtn">Paste</button>
+          <button type="button" id="clearBtn" style="display:none;">Clear</button>
+        </div>
+      </div>
+      <button type="submit">Download</button>
+    </form>
+    <img id="thumbnail" src="" alt="Thumbnail Preview">
+    <p id="result"></p>
+    <div id="progress-container">
+      <div id="progress-bar"></div>
+    </div>
+    <a id="downloadLink" href="#" download>📥 Download Video</a>
+  </div>
+
+  <script>
+    const videoUrlInput = document.getElementById("videoUrl");
+    const pasteBtn = document.getElementById("pasteBtn");
+    const clearBtn = document.getElementById("clearBtn");
+
+    pasteBtn.onclick = async () => {
+      try {
+        const text = await navigator.clipboard.readText();
+        videoUrlInput.value = text;
+        videoUrlInput.dispatchEvent(new Event('input'));
+        pasteBtn.style.display = "none";
+        clearBtn.style.display = "inline-block";
+      } catch (err) {
+        alert("Failed to paste from clipboard");
+      }
+    };
+
+    clearBtn.onclick = () => {
+      videoUrlInput.value = "";
+      videoUrlInput.dispatchEvent(new Event('input'));
+      clearBtn.style.display = "none";
+      pasteBtn.style.display = "inline-block";
+    };
+
+    videoUrlInput.addEventListener("input", () => {
+      if (videoUrlInput.value.trim() !== "") {
+        pasteBtn.style.display = "none";
+        clearBtn.style.display = "inline-block";
+      } else {
+        clearBtn.style.display = "none";
+        pasteBtn.style.display = "inline-block";
+      }
+    });
+
+    document.getElementById("videoUrl").addEventListener("input", async function () {
+      const videoUrl = this.value.trim();
+      const thumbnail = document.getElementById("thumbnail");
+
+      if (!videoUrl) {
+        thumbnail.style.display = "none";
+        return;
+      }
+
+      try {
+        const response = await fetch(/api/thumbnail?videoUrl=${encodeURIComponent(videoUrl)});
+        const data = await response.json();
+
+        if (data.thumbnail) {
+          thumbnail.src = data.thumbnail;
+          thumbnail.style.display = "block";
+        } else {
+          thumbnail.style.display = "none";
+        }
+      } catch (error) {
+        console.error("Thumbnail error:", error);
+        thumbnail.style.display = "none";
+      }
+    });
+
+    document.getElementById("downloadForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      const videoUrl = document.getElementById("videoUrl").value.trim();
+      const progressBar = document.getElementById("progress-bar");
+      const progressContainer = document.getElementById("progress-container");
+      const result = document.getElementById("result");
+      const downloadLink = document.getElementById("downloadLink");
+
+      result.innerText = "";
+      progressContainer.style.display = "block";
+      progressBar.style.width = "0%";
+      downloadLink.style.display = "none";
+
+      try {
+        const response = await fetch('/api/download', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({ videoUrl })
+        });
+
+        if (!response.ok) throw new Error(await response.text());
+
+        const blob = await response.blob();
+        const fileUrl = window.URL.createObjectURL(blob);
+
+        result.innerText = "✅ Video ready for download!";
+        result.style.color = "green";
+        downloadLink.href = fileUrl;
+        downloadLink.download = "video.mp4";
+        downloadLink.style.display = "inline-block";
+      } catch (error) {
+        console.error("Download error:", error);
+        result.innerText = "❌ Error downloading video. Try again!";
+        result.style.color = "red";
+      }
+    });
+  </script>
+</body>
+</html>

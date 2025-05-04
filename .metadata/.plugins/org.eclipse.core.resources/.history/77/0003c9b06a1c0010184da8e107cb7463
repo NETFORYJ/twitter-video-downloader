@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Downloader</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Poppins', sans-serif;
+      background: #f4f7fe;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .container {
+      background: white;
+      padding: 40px 30px;
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+      width: 90%;
+      max-width: 480px;
+      text-align: center;
+    }
+
+    h1 {
+      margin-bottom: 25px;
+      color: #273c75;
+      font-size: 26px;
+      font-weight: 600;
+    }
+
+    .input-wrapper {
+      position: relative;
+      margin-bottom: 20px;
+    }
+
+    .input-wrapper input[type="text"] {
+      width: 100%;
+      padding: 16px 20px;
+      padding-right: 120px;
+      font-size: 15px;
+      border: 2px solid #e0e0e0;
+      border-radius: 12px;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+
+    .input-wrapper input[type="text"]:focus {
+      border-color: #1e90ff;
+    }
+
+    .input-buttons {
+      position: absolute;
+      top: 50%;
+      right: 10px;
+      transform: translateY(-50%);
+      display: flex;
+      gap: 5px;
+    }
+
+    .input-buttons button {
+      background: #f1f3f6;
+      border: none;
+      font-size: 12px;
+      padding: 5px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .input-buttons button:hover {
+      background: #dcdfe6;
+    }
+
+    button[type="submit"] {
+      width: 100%;
+      padding: 16px;
+      background: #1e90ff;
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background 0.3s;
+      margin-top: 10px;
+    }
+
+    button[type="submit"]:hover {
+      background: #187bcd;
+    }
+
+    #thumbnail {
+      display: none;
+      width: 100%;
+      margin-top: 20px;
+      border-radius: 15px;
+      box-shadow: 0 5px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    #progress-container {
+      width: 100%;
+      background: #e9ecef;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 20px;
+      display: none;
+    }
+
+    #progress-bar {
+      width: 0%;
+      height: 10px;
+      background: #1e90ff;
+      transition: width 0.4s ease;
+    }
+
+    #result {
+      margin-top: 20px;
+      font-weight: 500;
+      color: #555;
+      font-size: 15px;
+    }
+
+    #downloadLink {
+      display: none;
+      margin-top: 20px;
+      padding: 14px 20px;
+      background: #28a745;
+      color: white;
+      font-weight: 600;
+      border-radius: 12px;
+      text-decoration: none;
+      font-size: 15px;
+      transition: background 0.3s;
+    }
+
+    #downloadLink:hover {
+      background: #218838;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Download Video 🚀</h1>
+    <form id="downloadForm">
+      <div class="input-wrapper">
+        <input type="text" id="videoUrl" placeholder="Paste video URL..." required>
+        <div class="input-buttons">
+          <button type="button" id="pasteBtn">Paste</button>
+          <button type="button" id="clearBtn" style="display:none;">Clear</button>
+        </div>
+      </div>
+      <button type="submit">Download Now</button>
+    </form>
+    <img id="thumbnail" src="" alt="Thumbnail Preview">
+    <div id="progress-container">
+      <div id="progress-bar"></div>
+    </div>
+    <p id="result"></p>
+    <a id="downloadLink" href="#" download>📥 Download</a>
+  </div>
+
+<script>
+// Your JS is already good. No changes needed.
+// You can use your exact same JavaScript code you shared above.
+</script>
+</body>
+</html>

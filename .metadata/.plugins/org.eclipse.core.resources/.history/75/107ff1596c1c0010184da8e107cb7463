@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Downloader</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #74ebd5, #acb6e5);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+
+    .container {
+      background-color: white;
+      padding: 40px 30px;
+      border-radius: 20px;
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15);
+      width: 90%;
+      max-width: 500px;
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      color: #333;
+      font-size: 26px;
+      font-weight: 600;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-wrapper input[type="text"] {
+      width: 100%;
+      padding: 15px;
+      font-size: 16px;
+      margin-bottom: 20px;
+      border: 1px solid #ccc;
+      border-radius: 12px;
+      padding-right: 110px;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+
+    .input-wrapper input[type="text"]:focus {
+      border-color: #74ebd5;
+    }
+
+    .input-buttons {
+      position: absolute;
+      right: 10px;
+      display: flex;
+      gap: 5px;
+    }
+
+    .input-buttons button {
+      background: #eee;
+      border: 1px solid #ccc;
+      font-size: 12px;
+      padding: 5px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .input-buttons button:hover {
+      background: #ddd;
+    }
+
+    button[type="submit"] {
+      padding: 15px;
+      width: 100%;
+      background: linear-gradient(to right, #ff416c, #ff4b2b);
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    button[type="submit"]:hover {
+      background: linear-gradient(to right, #ff4b2b, #ff416c);
+    }
+
+    #thumbnail {
+      display: none;
+      width: 100%;
+      margin-top: 20px;
+      border-radius: 12px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    #progress-container {
+      width: 100%;
+      background-color: #e0e0e0;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 20px;
+      display: none;
+    }
+
+    #progress-bar {
+      width: 0%;
+      height: 10px;
+      background-color: #4caf50;
+      transition: width 0.4s ease;
+    }
+
+    #result {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+
+    #downloadLink {
+      display: none;
+      margin-top: 20px;
+      padding: 15px;
+      background-color: #28a745;
+      color: white;
+      border-radius: 10px;
+      text-decoration: none;
+      font-weight: bold;
+      transition: background 0.3s ease;
+    }
+
+    #downloadLink:hover {
+      background-color: #218838;
+    }
+
+    .footer {
+      font-size: 12px;
+      color: #555;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Video Downloader 🚀</h1>
+    <form id="downloadForm">
+      <div class="input-wrapper">
+        <input type="text" id="videoUrl" placeholder="Paste video URL here..." required>
+        <div class="input-buttons">
+          <button type="button" id="pasteBtn">Paste</button>
+          <button type="button" id="clearBtn" style="display:none;">Clear</button>
+        </div>
+      </div>
+      <button type="submit">Download</button>
+    </form>
+    <img id="thumbnail" src="" alt="Thumbnail Preview">
+    <p id="result"></p>
+    <div id="progress-container">
+      <div id="progress-bar"></div>
+    </div>
+    <a id="downloadLink" href="#" download>📥 Download Video</a>
+  </div>
+
+  <div class="footer">
+    Copyright © 2024-2025<br>
+    YJ NETWORK TECH LIMITED
+  </div>
+
+<script>
+// Your same JavaScript (no changes made)
+</script>
+</body>
+</html>
