@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Video Downloader</title>
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
       padding: 0;
@@ -33,31 +37,33 @@
     }
 
     .input-wrapper {
-  position: relative;
-  width: 100%;
-}
+      position: relative;
+      width: 100%;
+    }
 
-.input-wrapper input {
-  width: 100%;
-  padding: 15px 40px 15px 15px; /* space for button */
-  font-size: 16px;
-  border: 1px solid #ccc;
-  border-radius: 10px;
-  box-sizing: border-box;
-}
+    .input-wrapper input {
+      width: 100%;
+      padding: 15px 50px 15px 15px; /* space for button */
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      box-sizing: border-box;
+    }
 
-.input-wrapper button {
-  position: absolute;
-  top: 50%;
-  right: 10px;
-  transform: translateY(-50%);
-  border: none;
-  background: transparent;
-  font-size: 18px;
-  cursor: pointer;
-}
-
-
+    .input-wrapper button {
+      position: absolute;
+      top: 50%;
+      right: 10px;
+      transform: translateY(-50%);
+      border: none;
+      background: transparent;
+      font-size: 18px;
+      cursor: pointer;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
 
     button[type="submit"] {
       padding: 15px;
@@ -81,7 +87,7 @@
       width: 100%;
       margin-top: 20px;
       border-radius: 12px;
-      box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+      box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
     }
 
     #progress-container {
@@ -120,18 +126,33 @@
     #downloadLink:hover {
       background-color: #218838;
     }
+
+    /* Media Queries for responsiveness */
+    @media (max-width: 480px) {
+      h1 {
+        font-size: 20px;
+      }
+
+      button[type="submit"] {
+        padding: 12px;
+        font-size: 14px;
+      }
+
+      .container {
+        padding: 25px;
+      }
+    }
   </style>
 </head>
 <body>
 
   <div class="container">
-    <h1>Twiter Video Downloader 🚀</h1>
+    <h1>Twitter Video Downloader 🚀</h1>
     <form id="downloadForm">
-    <div class="input-wrapper">
-  <input type="text" id="videoUrl" placeholder="Paste video URL here..." required>
-  <button type="button" id="actionBtn">📋</button>
-</div>
-
+      <div class="input-wrapper">
+        <input type="text" id="videoUrl" placeholder="Paste video URL here..." required aria-label="Video URL">
+        <button type="button" id="actionBtn" aria-label="Paste or clear URL">📋</button>
+      </div>
       <button type="submit">Download</button>
     </form>
     <img id="thumbnail" src="" alt="Thumbnail Preview">
@@ -147,18 +168,10 @@
     const actionBtn = document.getElementById("actionBtn");
     const form = document.getElementById("downloadForm");
 
-    // Basic URL pattern (client-side validation)
-   
-    /* function isValidUrlOld(url) {
-  const pattern = /^(https?:\/\/)?(www\.)?[\w\-]+\.[\w]{2,}.*$/i;
-  return pattern.test(url);
-}
-*/
-function isValidUrl(url) {
-	  const pattern = /^https?:\/\/(www\.)?(twitter\.com|x\.com)\/[a-zA-Z0-9_]+\/status\/\d+/i;
-	  return pattern.test(url);
-	}
-
+    function isValidUrl(url) {
+      const pattern = /^https?:\/\/(www\.)?(twitter\.com|x\.com)\/[a-zA-Z0-9_]+\/status\/\d+/i;
+      return pattern.test(url);
+    }
 
     input.addEventListener("input", () => {
       const videoUrl = input.value.trim();
@@ -242,17 +255,15 @@ function isValidUrl(url) {
           body: new URLSearchParams({ videoUrl })
         });
 
-        // if (!response.ok) throw new Error(await response.text());
-
         if (!response.ok) {
-        	  if (response.status === 400) {
-        	    result.innerText = "❌ Please enter a valid Twitter or X video URL.";
-        	  } else {
-        	    result.innerText = "❌ Error downloading video. Try again!";
-        	  }
-        	  result.style.color = "red";
-        	  return;
-        	}
+          if (response.status === 400) {
+            result.innerText = "❌ Please enter a valid Twitter or X video URL.";
+          } else {
+            result.innerText = "❌ Error downloading video. Try again!";
+          }
+          result.style.color = "red";
+          return;
+        }
 
         const blob = await response.blob();
         const fileUrl = window.URL.createObjectURL(blob);

@@ -57,10 +57,16 @@ public class VideoController {
 
        try {
            logger.info("Downloading video from: " + videoUrl);
-           String filePath = this.videoDownloadService.downloadVideo(videoUrl);
-           logger.info("Downloaded file path: " + filePath);
+         //  String filePath = this.videoDownloadService.downloadVideo(videoUrl);
+           
+            String filename = this.videoDownloadService.downloadVideo(videoUrl);
 
-           Path path = Paths.get("downloads", filePath);
+        
+           logger.info("Downloaded file path: " + filename);
+
+           Path path = Paths.get("downloads", filename);
+         //  Path path = Paths.get(filePath);
+           
            File file = path.toFile();
 
            if (file.exists() && file.canRead()) {
@@ -74,7 +80,7 @@ public class VideoController {
                    throw new RuntimeException("Failed to read video file");
                }
            } else {
-               logger.severe("File does not exist or cannot be read: " + filePath);
+               logger.severe("File does not exist or cannot be read: " + filename);
                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
            }
        } catch (Exception e) {
