@@ -1,0 +1,220 @@
+package com.example.TwitterVideoDownloader.service;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.stereotype.Service;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.InputStreamReader;
+import java.util.*;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+
+@Service
+public class VideoDownloadService {
+
+    private String getCookieFile(String videoUrl) {
+        if (!videoUrl.contains("youtube.com") && !videoUrl.contains("youtu.be")) {
+            if (videoUrl.contains("facebook.com")) {
+                return "cookies/facebook_cookies.txt";
+            } else if (!videoUrl.contains("twitter.com") && !videoUrl.contains("x.com")) {
+                return videoUrl.contains("instagram.com") ? "cookies/instagram_cookies.txt" : null;
+            } else {
+                return "cookies/twitter_cookies.txt";
+            }
+        } else {
+            return "cookies/youtube_cookies.txt";
+        }
+    }
+
+    public String fetchVideoDetails(String videoUrl) throws Exception {
+        System.out.println("Fetching video details for: " + videoUrl);
+        List<String> command = new ArrayList<>();
+        command.add("yt-dlp");
+        command.add("--skip-download");
+        command.add("--print-json");
+        command.add("--no-check-certificate");
+        command.add(videoUrl);
+        String cookieFile = getCookieFile(videoUrl);
+        if (cookieFile != null) {
+            command.add("--cookies");
+            command.add(cookieFile);
+        }
+
+        ProcessBuilder processBuilder = new ProcessBuilder(command);
+        processBuilder.redirectErrorStream(true);
+        Process process = processBuilder.start();
+
+        StringBuilder output = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                output.append(line).append("\n");
+            }
+        }
+
+        int exitCode = process.waitFor();
+        if (exitCode != 0) {
+            throw new RuntimeException("Failed to fetch video details.");
+        }
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        Map<String, Object> jsonResponse = objectMapper.readValue(output.toString(), Map.class);
+        String thumbnailUrl = jsonResponse.getOrDefault("thumbnail", "").toString();
+        String title = jsonResponse.getOrDefault("title", "Unknown Title").toString();
+
+        Map<String, String> response = new HashMap<>();
+        response.put("thumbnail", thumbnailUrl);
+        response.put("title", title);
+        return objectMapper.writeValueAsString(response);
+    }
+    public String downloadVideo(String videoUrl) throws Exception {
+        System.out.println("Downloading video from: " + videoUrl);
+
+        String uniqueFileName = UUID.randomUUID() + ".mp4";
+        String filePath = "downloads/" + uniqueFileName;
+
+        // Ensure the downloads directory exists
+        File downloadDir = new File("downloads");
+        if (!downloadDir.exists() && !downloadDir.mkdirs()) {
+            throw new RuntimeException("Failed to create downloads directory");
+        }
+
+        List<String> command = new ArrayList<>();
+        command.add("yt-dlp");
+        command.add("--user-agent");
+        command.add("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36");
+        command.add("-f");
+        command.add("best");  // Select the best format
+        command.add("--no-check-certificate");
+        command.add("-o");
+        command.add(filePath);
+        command.add(videoUrl);
+
+        // Handle cookies if available
+        String cookieFile = getCookieFile(videoUrl);
+        if (cookieFile != null) {
+            File cookie = new File(cookieFile);
+            if (cookie.exists()) {
+                command.add("--cookies");
+                command.add(cookieFile);
+            } else {
+                System.out.println("Cookie file not found, skipping: " + cookieFile);
+            }
+        }
+
+        // Log the full command for debugging
+        System.out.println("yt-dlp Command: " + String.join(" ", command));
+
+        ProcessBuilder processBuilder = new ProcessBuilder(command);
+        processBuilder.redirectErrorStream(true);  // Redirect error stream to standard output
+        Process process = processBuilder.start();
+
+        // Capture both stdout and stderr
+        StringBuilder output = new StringBuilder();
+        StringBuilder errorOutput = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+             BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
+
+            // Capture stdout
+            String line;
+            while ((line = reader.readLine()) != null) {
+                output.append(line).append("\n");
+            }
+
+            // Capture stderr (error output)
+            while ((line = errorReader.readLine()) != null) {
+                errorOutput.append(line).append("\n");
+            }
+        }
+
+        // Log both stdout and stderr for debugging
+        System.out.println("yt-dlp Output:\n" + output.toString());
+        System.out.println("yt-dlp Error Output:\n" + errorOutput.toString());
+
+        int exitCode = process.waitFor();
+        if (exitCode != 0) {
+            throw new RuntimeException("yt-dlp exited with code: " + exitCode);
+        }
+
+        // Verify downloaded file exists
+        File downloadedFile = new File(filePath);
+        if (!downloadedFile.exists()) {
+            throw new RuntimeException("Downloaded file not found: " + filePath);
+        }
+
+        return uniqueFileName;
+    }
+
+    public String getThumbnail(String videoUrl) throws Exception {
+        logger.info("Fetching thumbnail for: " + videoUrl); // Better than System.out
+        
+        List<String> command = new ArrayList<>();
+        command.add("yt-dlp");
+        command.add("--skip-download");
+        command.add("--print-json");
+        command.add("--no-check-certificate");
+        command.add("--quiet");  // Add quiet mode to reduce unnecessary output
+        command.add(videoUrl);
+        
+        // Cookie handling (keep your existing logic)
+        String cookieFile = getCookieFile(videoUrl);
+        if (cookieFile != null) {
+            command.add("--cookies");
+            command.add(cookieFile);
+        }
+
+        ProcessBuilder processBuilder = new ProcessBuilder(command);
+        processBuilder.redirectErrorStream(true);
+        
+        try {
+            Process process = processBuilder.start();
+            String jsonOutput;
+            
+            // Read output with timeout protection
+            try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(process.getInputStream()))) {
+                jsonOutput = reader.lines().collect(Collectors.joining("\n"));
+            }
+
+            int exitCode = process.waitFor(10, TimeUnit.SECONDS); // Add timeout
+            if (exitCode != 0) {
+                throw new RuntimeException("yt-dlp exited with code " + exitCode);
+            }
+
+            ObjectMapper objectMapper = new ObjectMapper();
+            Map<String, Object> jsonResponse = objectMapper.readValue(jsonOutput, Map.class);
+            
+            // Enhanced thumbnail URL extraction
+            String thumbnailUrl = Optional.ofNullable(jsonResponse.get("thumbnail"))
+                .or(() -> Optional.ofNullable(jsonResponse.get("thumbnails"))
+                    .filter(List.class::isInstance)
+                    .map(List.class::cast)
+                    .filter(list -> !list.isEmpty())
+                    .map(list -> ((Map<String, Object>)list.get(0)).get("url")))
+                .map(Object::toString)
+                .orElse("");
+
+            // Handle relative URLs and fallback
+            if (thumbnailUrl.isEmpty()) {
+                return "https://via.placeholder.com/350x200?text=No+Thumbnail";
+            } else if (!thumbnailUrl.startsWith("http")) {
+                return "https://" + thumbnailUrl;
+            }
+            
+            return thumbnailUrl;
+            
+        } catch (IOException e) {
+            logger.log(Level.SEVERE, "I/O Error fetching thumbnail", e);
+            throw new Exception("Failed to communicate with yt-dlp");
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new Exception("Thumbnail fetch interrupted");
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "Unexpected error fetching thumbnail", e);
+            throw new Exception("Failed to process thumbnail response");
+        }
+    }

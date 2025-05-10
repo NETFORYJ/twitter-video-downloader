@@ -1,162 +1,193 @@
 package com.example.TwitterVideoDownloader.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 import org.springframework.stereotype.Service;
+
+import java.io.*;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.*;
 
 @Service
 public class VideoDownloadService {
-   private String getCookieFile(String videoUrl) {
-      if (!videoUrl.contains("youtube.com") && !videoUrl.contains("youtu.be")) {
-         if (videoUrl.contains("facebook.com")) {
-            return "cookies/facebook_cookies.txt";
-         } else if (!videoUrl.contains("twitter.com") && !videoUrl.contains("x.com")) {
-            return videoUrl.contains("instagram.com") ? "cookies/instagram_cookies.txt" : null;
-         } else {
+
+    private String normalizeUrl(String url) {
+        return url.replace("x.com", "twitter.com").trim();
+    }
+
+    private String getCookieFile(String videoUrl) {
+        if (videoUrl.contains("twitter.com")) {
             return "cookies/twitter_cookies.txt";
-         }
-      } else {
-         return "cookies/youtube_cookies.txt";
-      }
-   }
+        }
+        return null;
+    }
 
-   public String fetchVideoDetails(String videoUrl) throws Exception {
-      System.out.println("Fetching video details for: " + videoUrl);
-      List<String> command = new ArrayList();
-      command.add("yt-dlp");
-      command.add("--skip-download");
-      command.add("--print-json");
-      command.add("--no-check-certificate");
-      command.add(videoUrl);
-      String cookieFile = this.getCookieFile(videoUrl);
-      if (cookieFile != null) {
-         command.add("--cookies");
-         command.add(cookieFile);
-      }
+    public String fetchVideoDetails(String videoUrl) throws Exception {
+        videoUrl = normalizeUrl(videoUrl);
+        System.out.println("Fetching video details for: " + videoUrl);
 
-      ProcessBuilder processBuilder = new ProcessBuilder(command);
-      processBuilder.redirectErrorStream(true);
-      Process process = processBuilder.start();
-      StringBuilder output = new StringBuilder();
-      BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+        List<String> command = new ArrayList<>(Arrays.asList(
+                "yt-dlp",
+                "--skip-download",
+                "--print-json",
+                "--no-check-certificate",
+                videoUrl
+        ));
 
-      String line;
-      try {
-         while((line = reader.readLine()) != null) {
-            output.append(line).append("\n");
-         }
-      } catch (Throwable var14) {
-         try {
-            reader.close();
-         } catch (Throwable var13) {
-            var14.addSuppressed(var13);
-         }
+        String cookieFile = getCookieFile(videoUrl);
+        if (cookieFile != null) {
+            command.add("--cookies");
+            command.add(cookieFile);
+        }
 
-         throw var14;
-      }
+        ProcessBuilder processBuilder = new ProcessBuilder(command);
+        processBuilder.redirectErrorStream(true);
+        Process process = processBuilder.start();
 
-      reader.close();
-      int var15 = process.waitFor();
-      if (var15 != 0) {
-         throw new RuntimeException("Failed to fetch video details.");
-      } else {
-         ObjectMapper objectMapper = new ObjectMapper();
-         Map<String, Object> jsonResponse = (Map)objectMapper.readValue(output.toString(), Map.class);
-         String thumbnailUrl = jsonResponse.getOrDefault("thumbnail", "").toString();
-         String title = jsonResponse.getOrDefault("title", "Unknown Title").toString();
-         Map<String, String> response = new HashMap();
-         response.put("thumbnail", thumbnailUrl);
-         response.put("title", title);
-         return objectMapper.writeValueAsString(response);
-      }
-   }
+        StringBuilder output = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                output.append(line).append("\n");
+            }
+        }
 
-   public String downloadVideo(String videoUrl) throws Exception {
-      System.out.println("Downloading: " + videoUrl);
-      String uniqueFileName = UUID.randomUUID() + ".mp4";
-      String filePath = "downloads/" + uniqueFileName;
-      (new File("downloads")).mkdirs();
-      List<String> command = new ArrayList();
-      command.add("yt-dlp");
-      command.add("-f");
-      command.add("best");
-      command.add("--no-check-certificate");
-      command.add("-o");
-      command.add(filePath);
-      command.add(videoUrl);
-      String cookieFile = this.getCookieFile(videoUrl);
-      if (cookieFile != null) {
-         command.add("--cookies");
-         command.add(cookieFile);
-      }
+        int exitCode = process.waitFor();
+        if (exitCode != 0) {
+            throw new RuntimeException("Failed to fetch video details.");
+        }
 
-      ProcessBuilder processBuilder = new ProcessBuilder(command);
-      processBuilder.redirectErrorStream(true);
-      Process process = processBuilder.start();
-      process.waitFor();
-      File downloadedFile = new File(filePath);
-      if (!downloadedFile.exists()) {
-         throw new RuntimeException("Downloaded file not found: " + filePath);
-      } else {
-         return uniqueFileName;
-      }
-   }
+        ObjectMapper objectMapper = new ObjectMapper();
+        Map<String, Object> jsonResponse = objectMapper.readValue(output.toString(), Map.class);
 
-   public String getThumbnail(String videoUrl) throws Exception {
-      System.out.println("Fetching thumbnail for: " + videoUrl);
-      List<String> command = new ArrayList();
-      command.add("yt-dlp");
-      command.add("--skip-download");
-      command.add("--print-json");
-      command.add("--no-check-certificate");
-      command.add(videoUrl);
-      String cookieFile = this.getCookieFile(videoUrl);
-      if (cookieFile != null) {
-         command.add("--cookies");
-         command.add(cookieFile);
-      }
+        String thumbnailUrl = jsonResponse.getOrDefault("thumbnail", "").toString();
+        String title = jsonResponse.getOrDefault("title", "Unknown Title").toString();
 
-      ProcessBuilder processBuilder = new ProcessBuilder(command);
-      processBuilder.redirectErrorStream(true);
-      Process process = processBuilder.start();
-      StringBuilder output = new StringBuilder();
-      BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+        Map<String, String> response = new HashMap<>();
+        response.put("thumbnail", thumbnailUrl);
+        response.put("title", title);
+        return objectMapper.writeValueAsString(response);
+    }
 
-      String line;
-      try {
-         while((line = reader.readLine()) != null) {
-            output.append(line).append("\n");
-         }
-      } catch (Throwable var12) {
-         try {
-            reader.close();
-         } catch (Throwable var11) {
-            var12.addSuppressed(var11);
-         }
+    public String getThumbnail(String videoUrl) throws Exception {
+        videoUrl = normalizeUrl(videoUrl);
+        String uniqueFileName = UUID.randomUUID().toString();
+        String thumbnailPath = "downloads/" + uniqueFileName + ".jpg";
 
-         throw var12;
-      }
+        // Create downloads directory if needed
+        File downloadDir = new File("downloads");
+        if (!downloadDir.exists() && !downloadDir.mkdirs()) {
+            throw new RuntimeException("Failed to create downloads directory");
+        }
 
-      reader.close();
-      int var13 = process.waitFor();
-      if (var13 != 0) {
-         throw new RuntimeException("Failed to fetch thumbnail.");
-      } else {
-         ObjectMapper objectMapper = new ObjectMapper();
-         Map<String, Object> jsonResponse = (Map)objectMapper.readValue(output.toString(), Map.class);
-         String thumbnailUrl = jsonResponse.getOrDefault("thumbnail", "").toString();
-         if (thumbnailUrl.isEmpty()) {
-            thumbnailUrl = "https://via.placeholder.com/350x200?text=No+Thumbnail";
-         }
+        List<String> command = new ArrayList<>(Arrays.asList(
+            "yt-dlp",
+            "--skip-download",
+            "--write-thumbnail",
+            "--convert-thumbnails", "jpg",
+            "--no-check-certificate",
+            "-o", thumbnailPath.replace(".jpg", ".%(ext)s"),
+            videoUrl
+        ));
 
-         return thumbnailUrl;
-      }
-   }
+        String cookieFile = getCookieFile(videoUrl);
+        if (cookieFile != null && new File(cookieFile).exists()) {
+            command.add("--cookies");
+            command.add(cookieFile);
+        }
+
+        System.out.println("yt-dlp Command: " + String.join(" ", command));
+
+        ProcessBuilder processBuilder = new ProcessBuilder(command);
+        processBuilder.redirectErrorStream(true);
+        Process process = processBuilder.start();
+
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+            reader.lines().forEach(System.out::println);
+        }
+
+        int exitCode = process.waitFor();
+        if (exitCode != 0) {
+            throw new RuntimeException("yt-dlp exited with code: " + exitCode);
+        }
+
+
+        File thumbnailFile = new File(thumbnailPath);
+        if (thumbnailFile.exists()) {
+            return thumbnailFile.getAbsolutePath(); // Return absolute path
+        }
+        
+        return "https://via.placeholder.com/350x200?text=No+Thumbnail";
+    }
+
+
+    private void saveThumbnail(String thumbnailUrl, String outputPath) throws IOException {
+        URL url = new URL(thumbnailUrl);
+        try (InputStream in = url.openStream()) {
+            Files.copy(in, Paths.get(outputPath), StandardCopyOption.REPLACE_EXISTING);
+        }
+    }
+
+    public String downloadVideo(String videoUrl) throws Exception {
+        videoUrl = normalizeUrl(videoUrl);
+        System.out.println("Downloading video from: " + videoUrl);
+
+        // Ensure downloads directory exists
+        File downloadDir = new File("downloads");
+        if (!downloadDir.exists() && !downloadDir.mkdirs()) {
+            throw new RuntimeException("Failed to create downloads directory");
+        }
+
+        String uniqueFileName = UUID.randomUUID() + ".mp4";
+        String filePath = Paths.get("downloads", uniqueFileName).toString();
+
+        List<String> command = new ArrayList<>(Arrays.asList(
+            "yt-dlp",
+            "--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+            "-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+            "--no-check-certificate",
+            "--merge-output-format", "mp4",
+            "-o", filePath,
+            videoUrl
+        ));
+
+        String cookieFile = getCookieFile(videoUrl);
+        if (cookieFile != null && new File(cookieFile).exists()) {
+            command.add("--cookies");
+            command.add(cookieFile);
+        }
+
+        System.out.println("Executing command: " + String.join(" ", command));
+
+        ProcessBuilder processBuilder = new ProcessBuilder(command);
+        processBuilder.redirectErrorStream(true);
+        Process process = processBuilder.start();
+
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(process.getInputStream()))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                System.out.println(line);
+            }
+        }
+
+        int exitCode = process.waitFor();
+        if (exitCode != 0) {
+            File partialFile = new File(filePath);
+            if (partialFile.exists()) {
+                partialFile.delete();
+            }
+            throw new RuntimeException("Video download failed with exit code: " + exitCode);
+        }
+
+        File downloadedFile = new File(filePath);
+        if (!downloadedFile.exists()) {
+            throw new RuntimeException("Downloaded file not found: " + filePath);
+        }
+
+        return uniqueFileName;
+    }
 }

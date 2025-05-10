@@ -1,150 +1,120 @@
 package com.example.TwitterVideoDownloader.controller;
 
 import com.example.TwitterVideoDownloader.service.VideoDownloadService;
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.logging.FileHandler;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.logging.SimpleFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.ResponseEntity.BodyBuilder;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Collections;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @RestController
-@RequestMapping({"/api"})
+@RequestMapping("/api")
 public class VideoController {
-   @Autowired
-   private VideoDownloadService videoDownloadService;
-   private static final Logger logger = Logger.getLogger(VideoController.class.getName());
 
-   @PostMapping({"/fetch-details"})
-   public ResponseEntity<String> fetchVideoDetails(@RequestParam String videoUrl) {
-      try {
-         logger.info("Fetching video details for: " + videoUrl);
-         String jsonResponse = this.videoDownloadService.fetchVideoDetails(videoUrl);
-         return ResponseEntity.ok(jsonResponse);
-      } catch (Exception var3) {
-         logger.log(Level.SEVERE, "Error fetching video details: " + var3.getMessage(), var3);
-         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{\"error\": \"Error fetching video details.\"}");
-      }
-   }
+    @Autowired
+    private VideoDownloadService videoDownloadService;
 
-   
-   
-   @PostMapping({"/download"})
-   public ResponseEntity<Resource> downloadVideo(@RequestParam String videoUrl) {
-       // ✅ Allow only Twitter/X video URLs
-       if (!videoUrl.matches("^(https?://)?(www\\.)?(twitter\\.com|x\\.com)/[a-zA-Z0-9_]+/status/\\d+")) {
-           logger.warning("Blocked non-Twitter URL: " + videoUrl);
-           return ResponseEntity
-                   .status(HttpStatus.BAD_REQUEST)
-                   .body(null); // You can customize the message if needed
-       }
+    private static final Logger logger = Logger.getLogger(VideoController.class.getName());
 
-       try {
-           logger.info("Downloading video from: " + videoUrl);
-         //  String filePath = this.videoDownloadService.downloadVideo(videoUrl);
-           
-            String filename = this.videoDownloadService.downloadVideo(videoUrl);
+    @PostMapping("/fetch-details")
+    public ResponseEntity<String> fetchVideoDetails(@RequestParam String videoUrl) {
+        try {
+            logger.info("Fetching video details for: " + videoUrl);
+            String jsonResponse = videoDownloadService.fetchVideoDetails(videoUrl);
+            return ResponseEntity.ok(jsonResponse);
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error fetching video details: " + e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("{\"error\": \"Error fetching video details.\"}");
+        }
+    }
 
-        
-           logger.info("Downloaded file path: " + filename);
+    @PostMapping("/download")
+    public ResponseEntity<Resource> downloadVideo(@RequestParam String videoUrl) {
+        if (!videoUrl.matches("^(https?://)?(www\\.)?(twitter\\.com|x\\.com)/[a-zA-Z0-9_]+/status/\\d+(\\?.*)?$")) {
+            logger.warning("Blocked non-Twitter URL: " + videoUrl);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
 
-           Path path = Paths.get("downloads", filename);
-         //  Path path = Paths.get(filePath);
-           
-           File file = path.toFile();
+        try {
+            logger.info("Downloading video from: " + videoUrl);
+            
+            // First ensure downloads directory exists
+            Path downloadsDir = Paths.get("downloads");
+            if (!Files.exists(downloadsDir)) {
+                Files.createDirectories(downloadsDir);
+            }
+            
+            String filename = videoDownloadService.downloadVideo(videoUrl);
+            Path path = downloadsDir.resolve(filename).normalize();
+            
+            // Additional safety checks
+            if (!path.startsWith(downloadsDir)) {
+                throw new SecurityException("Attempt to access file outside downloads directory");
+            }
 
-           if (file.exists() && file.canRead()) {
-               Resource fileResource = new UrlResource(path.toUri());
-               if (fileResource.exists() && fileResource.isReadable()) {
-                   return ResponseEntity.ok()
-                           .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                           .header("Content-Disposition", "attachment; filename=\"" + file.getName() + "\"")
-                           .body(fileResource);
-               } else {
-                   throw new RuntimeException("Failed to read video file");
-               }
-           } else {
-               logger.severe("File does not exist or cannot be read: " + filename);
-               return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
-           }
-       } catch (Exception e) {
-           logger.log(Level.SEVERE, "Error downloading video: " + e.getMessage(), e);
-           return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-       }
-   }
-
-   // all video downloading from soial media 
-   /*@PostMapping({"/download"})
-   public ResponseEntity<Resource> downloadVideo(@RequestParam String videoUrl) {
-      try {
-         logger.info("Downloading video from: " + videoUrl);
-         String filePath = this.videoDownloadService.downloadVideo(videoUrl);
-         logger.info("Downloaded file path: " + filePath);
-         Path path = Paths.get("downloads", filePath);
-         File file = path.toFile();
-         if (file.exists() && file.canRead()) {
             Resource fileResource = new UrlResource(path.toUri());
             if (fileResource.exists() && fileResource.isReadable()) {
-               return ResponseEntity.ok()
-                  .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                  .header("Content-Disposition", "attachment; filename=\"" + file.getName() + "\"")
-                  .body(fileResource);
+                return ResponseEntity.ok()
+                        .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                        .body(fileResource);
             } else {
-               throw new RuntimeException("Failed to read video file");
+                throw new RuntimeException("Failed to read video file");
             }
-         } else {
-            logger.severe("File does not exist or cannot be read: " + filePath);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null); // fixed
-         }
-      } catch (Exception e) {
-         logger.log(Level.SEVERE, "Error downloading video: " + e.getMessage(), e);
-         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null); // fixed
-      }
-   }
-*/
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error downloading video: " + e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
 
-   @GetMapping({"/thumbnail"})
-   public ResponseEntity<Map<String, String>> getVideoThumbnail(@RequestParam String videoUrl) {
-      HashMap errorResponse;
-      try {
-         logger.info("Fetching thumbnail for: " + videoUrl);
-         String thumbnailUrl = this.videoDownloadService.getThumbnail(videoUrl);
-         errorResponse = new HashMap();
-         errorResponse.put("thumbnail", thumbnailUrl);
-         return ResponseEntity.ok(errorResponse);
-      } catch (Exception var4) {
-         logger.log(Level.SEVERE, "Error fetching thumbnail: " + var4.getMessage(), var4);
-         errorResponse = new HashMap();
-         errorResponse.put("error", "Error fetching thumbnail");
-         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
-      }
-   }
+    @GetMapping("/thumbnail")
+    public ResponseEntity<?> getVideoThumbnail(@RequestParam String videoUrl) {
+        logger.info("Fetching thumbnail for: " + videoUrl);
 
-   static {
-      try {
-         FileHandler fileHandler = new FileHandler("logs/console.log", true);
-         fileHandler.setFormatter(new SimpleFormatter());
-         logger.addHandler(fileHandler);
-         logger.setUseParentHandlers(false);
-      } catch (IOException var1) {
-         System.err.println("Failed to initialize log file: " + var1.getMessage());
-      }
+        try {
+            String thumbnailPath = videoDownloadService.getThumbnail(videoUrl);
+            
+            if (thumbnailPath == null || thumbnailPath.trim().isEmpty()) {
+                logger.warning("Thumbnail not found.");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Collections.singletonMap("error", "Thumbnail not found"));
+            }
 
-   }
+            // If it's a URL, return it directly
+            if (thumbnailPath.startsWith("http")) {
+                return ResponseEntity.ok(Collections.singletonMap("thumbnailUrl", thumbnailPath));
+            }
+
+            // For local files, serve them through the controller
+            Path file = Paths.get(thumbnailPath);
+            if (!Files.exists(file)) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Collections.singletonMap("error", "Thumbnail file not found"));
+            }
+
+            Resource resource = new FileSystemResource(file);
+            return ResponseEntity.ok()
+                    .contentType(MediaType.IMAGE_JPEG)
+                    .body(resource);
+
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Error fetching thumbnail: " + e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Collections.singletonMap("error", "Error fetching thumbnail"));
+        }
+    }
 }
